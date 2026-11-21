@@ -9,7 +9,7 @@ Avoid repeating async error forwarding and response formatting in each route. Se
 ## Installation
 
 ```bash
-npm install express-error-kit express
+npm install express-error-kit-siri
 ```
 
 ## Basic usage
