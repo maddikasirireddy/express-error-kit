@@ -1,7 +1,6 @@
-
 {
   "name": "express-error-kit-siri",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Small, configurable error handling utilities for Express apps",
   "main": "src/index.js",
   "files": [
