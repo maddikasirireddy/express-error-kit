@@ -1,0 +1,42 @@
+
+{
+  "name": "express-error-kit-siri",
+  "version": "1.0.0",
+  "description": "Small, configurable error handling utilities for Express apps",
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "keywords": [
+    "express",
+    "error",
+    "middleware",
+    "async-handler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maddikasirireddy/express-error-kit.git"
+  },
+  "homepage": "https://github.com/maddikasirireddy/express-error-kit#readme",
+  "bugs": {
+    "url": "https://github.com/maddikasirireddy/express-error-kit/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
+  }
+}
