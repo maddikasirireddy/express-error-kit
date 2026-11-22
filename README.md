@@ -1,57 +1,73 @@
 # Express Error Kit
 
-A lightweight, reusable **Node.js package for centralized error handling in Express.js applications**.
+**A lightweight error-handling toolkit for Express.js APIs.**
 
-[![npm version](https://img.shields.io/npm/v/express-error-kit-siri)](https://www.npmjs.com/package/express-error-kit-siri)
+[![npm](https://img.shields.io/npm/v/express-error-kit-siri)](https://www.npmjs.com/package/express-error-kit-siri)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Overview
+**[NPM Package](https://www.npmjs.com/package/express-error-kit-siri) · [Live Interactive Demo](https://express-error-kit-web-demo.vercel.app/) · [Demo Source Code](https://github.com/maddikasirireddy/express-error-kit-web-demo)**
 
-Express Error Kit simplifies error handling in Express 4 and Express 5 applications. It provides reusable utilities for creating custom errors, catching asynchronous errors, and returning consistent JSON error responses.
+## The Problem
 
-**NPM Package:** [express-error-kit-siri](https://www.npmjs.com/package/express-error-kit-siri)
+Error handling is a necessary part of every backend application. As an Express API grows, developers repeatedly need to handle missing resources, rejected promises, invalid operations, and unexpected server failures.
 
-**GitHub Repository:** [express-error-kit](https://github.com/maddikasirireddy/express-error-kit)
+Without a consistent approach, different endpoints may return different error formats, duplicate error-handling logic, or accidentally expose internal failure details.
 
-**Demo Project:** [express-error-kit-demo](https://github.com/maddikasirireddy/express-error-kit-demo)
+## The Solution
 
-## Features
+**Express Error Kit** packages three commonly needed error-handling utilities into a reusable NPM library:
 
-- Centralized error handling for Express applications
-- Custom HTTP error messages and status codes
-- Support for application-specific error codes
-- Automatic forwarding of asynchronous errors
-- Consistent JSON error responses
-- Hides internal server error messages in production
-- Compatible with Express 4 and Express 5
-- Lightweight CommonJS package
-- No required runtime dependencies beyond the Express application
+| Utility | Responsibility |
+|---|---|
+| `AppError` | Create meaningful application errors with HTTP status codes and custom identifiers |
+| `asyncHandler` | Forward errors from asynchronous route handlers |
+| `errorHandler` | Centralize error responses into a predictable JSON format |
+
+Instead of implementing the same error-handling pattern separately in each Express project, developers can install and reuse the package.
+
+## Key Features
+
+- **Consistent JSON responses** across error-producing routes
+- **Custom HTTP errors** with status codes and identifiers
+- **Asynchronous error forwarding**, especially useful with Express 4
+- **Centralized middleware** for formatting errors
+- **Production-aware messaging** that hides internal 5xx error details
+- **Express 4 and 5 compatibility**
+- **Small CommonJS implementation** with a focused API
+
+## Try It Live
+
+**[Open the Interactive Demo](https://express-error-kit-web-demo.vercel.app/)**
+
+The deployed web application demonstrates the package using a user-lookup interface.
+
+| Action | Expected status | What it demonstrates |
+|---|---|---|
+| Search user ID `1` | 200 OK | Normal API response |
+| Search user ID `2` | 200 OK | Normal API response |
+| Search user ID `99` | 404 Not Found | Custom `AppError` |
+| Trigger server error | 500 Internal Server Error | Asynchronous error handling and centralized formatting |
+
+The demo installs the published NPM package as a dependency rather than copying its source code.
 
 ## Installation
 
-Install the package using NPM:
+For an existing Express project:
 
 ```bash
 npm install express-error-kit-siri
 ```
 
-For a new Express project, install Express as well:
+For a new Express project:
 
 ```bash
 npm install express express-error-kit-siri
 ```
 
-**Requirements:**
-- Node.js 18 or later
-- Express.js 4.18+ or 5.x
-
 ## Quick Start
-
-Create a file named `server.js`:
 
 ```javascript
 const express = require("express");
-
 const {
   AppError,
   asyncHandler,
@@ -60,21 +76,10 @@ const {
 
 const app = express();
 
-app.use(express.json());
-
-// Sample data
-const users = [
-  { id: 1, name: "Siri" },
-  { id: 2, name: "Alex" }
-];
-
-// Successful request or custom error
 app.get("/users/:id", asyncHandler(async (req, res) => {
-  const user = users.find(
-    u => u.id === Number(req.params.id)
-  );
+  const user = { id: 1, name: "Siri" };
 
-  if (!user) {
+  if (Number(req.params.id) !== user.id) {
     throw new AppError(
       "User not found",
       404,
@@ -82,22 +87,14 @@ app.get("/users/:id", asyncHandler(async (req, res) => {
     );
   }
 
-  res.json({
-    success: true,
-    data: user
-  });
+  res.json({ success: true, user });
 }));
 
-// Example asynchronous error
-app.get("/server-error", asyncHandler(async () => {
-  throw new Error("Unexpected database failure");
-}));
-
-// Register error middleware after routes
+// Register after all routes
 app.use(errorHandler);
 
 app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+  console.log("Server running on port 3000");
 });
 ```
 
@@ -107,29 +104,15 @@ Start the server:
 node server.js
 ```
 
-## Example API Responses
+### Example error response
 
-### 1. Successful Request
+Request:
 
-**GET** `/users/1`
-
-HTTP Status: `200 OK`
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "name": "Siri"
-  }
-}
+```http
+GET /users/99
 ```
 
-### 2. User Not Found
-
-**GET** `/users/99`
-
-HTTP Status: `404 Not Found`
+Response — HTTP 404:
 
 ```json
 {
@@ -142,13 +125,77 @@ HTTP Status: `404 Not Found`
 }
 ```
 
-### 3. Internal Server Error
+This consistent response structure makes errors easier for frontend applications to display and handle.
 
-**GET** `/server-error`
+## How It Works
 
-In production mode, the package hides internal error details.
+```text
+Client sends an HTTP request
+            |
+            v
+     Express route
+            |
+            v
+    Application error
+       (AppError)
+            |
+            v
+       asyncHandler
+            |
+            v
+       errorHandler
+            |
+            v
+   Structured JSON response
+```
 
-HTTP Status: `500 Internal Server Error`
+`AppError` represents expected application failures, such as a missing user. `asyncHandler` forwards errors from asynchronous handlers to Express. `errorHandler` then formats the failure into a consistent response.
+
+For unexpected failures, the error middleware also supports safer production messaging.
+
+## API Reference
+
+### `AppError(message, statusCode, code)`
+
+Creates a custom error object.
+
+| Parameter | Type | Default | Purpose |
+|---|---|---|---|
+| `message` | string | Required | Human-readable error description |
+| `statusCode` | number | `500` | HTTP status |
+| `code` | string | `APP_ERROR` | Application-specific identifier |
+
+Example:
+
+```javascript
+throw new AppError("Access denied", 403, "ACCESS_DENIED");
+```
+
+### `asyncHandler(fn)`
+
+Accepts an Express route or middleware function and returns a wrapped function that forwards thrown errors and rejected promises to Express error middleware.
+
+```javascript
+app.get("/example", asyncHandler(async (req, res) => {
+  throw new Error("Unexpected failure");
+}));
+```
+
+Express 5 already forwards rejected promises automatically; this utility is particularly helpful for Express 4 applications.
+
+### `errorHandler(err, req, res, next)`
+
+Centralized Express error middleware that returns structured JSON responses.
+
+```javascript
+app.use(errorHandler);
+```
+
+Register it **after your routes**. If response headers have already been sent, it delegates the error to the next handler.
+
+## Production Error Handling
+
+When `NODE_ENV=production`, internal error messages for HTTP 5xx responses are replaced with a generic message:
 
 ```json
 {
@@ -161,96 +208,7 @@ HTTP Status: `500 Internal Server Error`
 }
 ```
 
-The exact error code for unexpected errors depends on the package implementation.
-
-## API Documentation
-
-### 1. AppError
-
-Creates a custom application error with an HTTP status code and an optional application-specific error code.
-
-**Syntax:**
-
-```javascript
-new AppError(message, statusCode, code);
-```
-
-**Parameters:**
-
-| Parameter | Type | Description | Default |
-|---|---|---|---|
-| message | String | Error description | Required |
-| statusCode | Number | HTTP status code | 500 |
-| code | String | Application error identifier | APP_ERROR |
-
-**Example:**
-
-```javascript
-throw new AppError(
-  "Access denied",
-  403,
-  "ACCESS_DENIED"
-);
-```
-
-**Return Value:** An Error object containing `message`, `statusCode`, and `code`.
-
-### 2. asyncHandler
-
-Wraps an asynchronous Express route or middleware function and forwards rejected promises and thrown errors to Express error middleware.
-
-**Syntax:**
-
-```javascript
-asyncHandler(fn);
-```
-
-**Parameter:**
-
-`fn` — An Express route handler or middleware function.
-
-**Example:**
-
-```javascript
-app.get("/data", asyncHandler(async (req, res) => {
-  const data = await fetchData();
-  res.json(data);
-}));
-```
-
-**Return Value:** An Express-compatible middleware function.
-
-**Benefit:** Reduces repetitive error-forwarding logic in asynchronous routes.
-
-Express 5 already forwards rejected promises automatically, but this helper remains useful for Express 4 compatibility.
-
-### 3. errorHandler
-
-Centralized Express error-handling middleware that formats errors into JSON responses.
-
-**Syntax:**
-
-```javascript
-app.use(errorHandler);
-```
-
-**Parameters:**
-
-| Parameter | Description |
-|---|---|
-| err | Error object |
-| req | Express request |
-| res | Express response |
-| next | Express next middleware function |
-
-**Behavior:**
-
-- Uses an appropriate HTTP status code
-- Returns a consistent JSON error structure
-- Hides internal server error messages in production
-- Delegates errors when response headers have already been sent
-
-**Important:** Register this middleware after all application routes.
+This reduces the risk of exposing internal implementation details through API responses. It is not a substitute for authentication, authorization, logging, or other security controls.
 
 ## Project Structure
 
@@ -266,95 +224,42 @@ express-error-kit/
 │   └── server.js
 ├── package.json
 ├── README.md
-├── LICENSE
-└── .gitignore
+└── LICENSE
 ```
 
 ## Testing
 
-The package uses Node.js's built-in test runner.
-
-To run the automated tests:
+The project includes automated tests using Node.js's built-in test runner.
 
 ```bash
+npm install
 npm test
 ```
 
-The test suite covers:
+The test suite covers custom error creation, asynchronous error forwarding, response formatting, production message protection, and handling responses whose headers have already been sent.
 
-- Custom error creation
-- Asynchronous error forwarding
-- Error response formatting
-- Production error-message protection
-- Handling responses whose headers have already been sent
-- Normalization of invalid HTTP status codes
+## Independent Integration
 
-**Test Results:** 7 tests passed, 0 failed.
+The package is used in a separate HTML, CSS, JavaScript, and Express application deployed on Vercel.
 
-To preview the NPM package contents:
+**[View Demo Repository](https://github.com/maddikasirireddy/express-error-kit-web-demo)**
 
-```bash
-npm pack --dry-run
-```
-
-## Real-World Integration Demo
-
-A separate Express application demonstrates installation and usage of this package.
-
-**Repository:** https://github.com/maddikasirireddy/express-error-kit-demo
-
-The demo includes endpoints for:
-
-| Endpoint | Purpose | HTTP Status |
-|---|---|---|
-| `/users/1` | Successful API response | 200 |
-| `/users/99` | Custom application error | 404 |
-| `/server-error` | Unexpected server error | 500 |
-
-This demonstrates that the package can be installed and reused in an independent Node.js project.
-
-## Versioning
-
-The package follows Semantic Versioning:
-
-`MAJOR.MINOR.PATCH`
-
-- **MAJOR:** Breaking API changes
-- **MINOR:** Backward-compatible new features
-- **PATCH:** Bug fixes and documentation corrections
-
-Published versions can be viewed on [NPM](https://www.npmjs.com/package/express-error-kit-siri?activeTab=versions).
+This demonstrates the complete workflow of building a reusable package, publishing it to NPM, installing it in another application, and exposing its functionality through a live interface.
 
 ## Limitations
 
-- Designed specifically for Express applications.
-- Uses CommonJS; ESM applications can import the CommonJS module.
-- Does not provide built-in logging or request validation.
-- Does not replace application-level authentication or authorization.
-- Custom error messages should not contain confidential information.
-- `AppError` does not validate constructor arguments; callers should provide valid HTTP status codes.
-
-## Contributing
-
-Contributions and suggestions are welcome.
-
-1. Fork the repository.
-2. Create a new feature branch.
-3. Make your changes.
-4. Add or update relevant tests.
-5. Run `npm test`.
-6. Submit a pull request describing your changes.
-
-Issues and feature suggestions can be submitted through the GitHub repository.
+- Intended for Express applications, not browser-side error handling
+- CommonJS implementation
+- No built-in request validation, error logging, or monitoring dashboard
+- Does not automatically create errors for every unmatched route
+- Applications must avoid placing sensitive information in client-facing custom errors
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License.
 
 ## Author
 
 **Maddika Siri Reddy**
 
-GitHub: [maddikasirireddy](https://github.com/maddikasirireddy)
-
-NPM: [siriiiii](https://www.npmjs.com/~siriiiii)
+[GitHub](https://github.com/maddikasirireddy) · [NPM](https://www.npmjs.com/~siriiiii)
